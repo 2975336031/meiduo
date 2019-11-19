@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'meiduo_mall.apps.users', # 用户模块应用
 ]
 
 MIDDLEWARE = [
