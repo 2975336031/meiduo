@@ -1,0 +1,9 @@
+[33mc74f960[m[33m ([m[1;36mHEAD -> [m[1;32mmaster[m[33m)[m HEAD@{0}: commit: 创建子应用
+[33m6e181ec[m HEAD@{1}: commit: 配置静态文件
+[33mea13e97[m HEAD@{2}: commit: 配置前端静态文件
+[33mf8154d2[m HEAD@{3}: commit: 配置工程日志
+[33m6da08a4[m HEAD@{4}: commit: 配置redis
+[33m6456243[m HEAD@{5}: commit: 配置mysql
+[33m7539859[m HEAD@{6}: commit: 配置开发环境和jinja2模板
+[33m7ef0878[m[33m ([m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{7}: commit: 创建项目
+[33mefa6b20[m HEAD@{8}: clone: from https://github.com/2975336031/meiduo.git
