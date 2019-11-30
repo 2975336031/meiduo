@@ -48,8 +48,16 @@ class RegisterView(View):
 class UsernameCountView(View):
     """判断用户名是否重复注册"""
     def get(self, request, username):
-
         # 校验
         count = User.objects.filter(username=username).count()
+        # 响应json
+        return http.JsonResponse({'count': count})
+
+
+class MobileCountView(View):
+    """判断手机号是否重复注册"""
+    def get(self, request, mobile):
+        # 校验
+        count = User.objects.filter(mobile=mobile).count()
         # 响应json
         return http.JsonResponse({'count': count})
