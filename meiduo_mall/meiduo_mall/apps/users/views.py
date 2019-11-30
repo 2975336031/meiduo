@@ -1,3 +1,4 @@
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render, redirect
 
 from django.views import View
@@ -130,10 +131,11 @@ class LogoutView(View):
         return response
 
 
-class InfoView(View):
+class InfoView(LoginRequiredMixin, View):
     """用户中心"""
     def get(self, request):
-        if request.user.is_authenticated:
-            return render(request, 'user_center_info.html')
-        else:
-            return redirect('/login/?next=/info/')
+        # if request.user.is_authenticated:
+        #     return render(request, 'user_center_info.html')
+        # else:
+        #     return redirect('/login/?next=/info/')
+        return render(request, 'user_center_info.html')

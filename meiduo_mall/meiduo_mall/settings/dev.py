@@ -209,3 +209,7 @@ AUTH_USER_MODEL = 'users.User'
 
 # 修改Django认证后端
 AUTHENTICATION_BACKENDS = ['users.utils.UsernameMobileAuthBackend']
+
+
+# 修改登录路由
+LOGIN_URL = '/login/'
