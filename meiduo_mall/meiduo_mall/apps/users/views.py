@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 
 from django.views import View
 from django import http
@@ -6,6 +6,7 @@ import re
 from .models import User
 from django.contrib.auth import login, authenticate
 from django_redis import get_redis_connection
+from django.conf import settings
 
 
 class RegisterView(View):
@@ -55,7 +56,10 @@ class RegisterView(View):
         login(request, user)
 
         # 4.响应
-        return http.HttpResponse('注册成功即代表登录成功,重定向到首页')
+        # return http.HttpResponse('注册成功即代表登录成功,重定向到首页')
+        response = redirect('/')
+        response.set_cookie('username', user.username, max_age=settings.SESSION_COOKIE_AGE)
+        return response
 
 
 class UsernameCountView(View):
@@ -107,4 +111,7 @@ class LoginView(View):
             request.session.set_expiry(0)
 
         # 5. 重定向
-        return http.HttpResponse('跳转到首页')
+        # return http.HttpResponse('跳转到首页')
+        response = redirect('/')
+        response.set_cookie('username', user.username, max_age=settings.SESSION_COOKIE_AGE)
+        return response
