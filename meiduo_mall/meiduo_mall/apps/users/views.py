@@ -4,7 +4,7 @@ from django.views import View
 from django import http
 import re
 from .models import User
-from django.contrib.auth import login, authenticate
+from django.contrib.auth import login, authenticate, logout
 from django_redis import get_redis_connection
 from django.conf import settings
 
@@ -114,4 +114,16 @@ class LoginView(View):
         # return http.HttpResponse('跳转到首页')
         response = redirect('/')
         response.set_cookie('username', user.username, max_age=settings.SESSION_COOKIE_AGE)
+        return response
+
+
+class LogoutView(View):
+    """退出登录"""
+    def get(self, request):
+        # 1. 清除状态操持
+        logout(request)
+        # 2. 删除cookie中的username
+        response = redirect('/login/')
+        response.delete_cookie('username')
+        # 3. 重定向到login
         return response
