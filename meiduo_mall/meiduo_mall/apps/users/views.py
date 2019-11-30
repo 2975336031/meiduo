@@ -112,7 +112,8 @@ class LoginView(View):
 
         # 5. 重定向
         # return http.HttpResponse('跳转到首页')
-        response = redirect('/')
+        # response = redirect('/')
+        response = redirect(request.GET.get('next') or '/')
         response.set_cookie('username', user.username, max_age=settings.SESSION_COOKIE_AGE)
         return response
 
@@ -127,3 +128,12 @@ class LogoutView(View):
         response.delete_cookie('username')
         # 3. 重定向到login
         return response
+
+
+class InfoView(View):
+    """用户中心"""
+    def get(self, request):
+        if request.user.is_authenticated:
+            return render(request, 'user_center_info.html')
+        else:
+            return redirect('/login/?next=/info/')
