@@ -5,6 +5,7 @@ from django import http
 import re
 from .models import User
 from django.contrib.auth import login
+from django_redis import get_redis_connection
 
 
 class RegisterView(View):
@@ -33,7 +34,19 @@ class RegisterView(View):
             return http.HttpResponseForbidden('两次密码不一一致')
         if not re.match(r'^1[3-9]\d{9}$', mobile):
             return http.HttpResponseForbidden('请输入正确的手机号')
-        # TODO: 短信验证码的验证代码后期补充
+        # 短信验证码的验证代码后期补充
+        # 创建redis连接
+        redis_conn = get_redis_connection('verify_codes')
+        # 获取redis的当前手机号对应的短信验证码
+        sms_code_server = redis_conn.get('sms_%s' % mobile)
+        # 将获取出来的短信验证码从redis删除(让短信验证码是一次性)
+        redis_conn.delete('sms_%s' % mobile)
+        # 判断短信验证码是否过期
+        if sms_code_server is None:
+            return render(request, 'register.html', {'register_errmsg': '短信验证码已过期'})
+        # 判断用户填写短信验证码是否正确
+        if sms_code != sms_code_server.decode():
+            return render(request, 'register.html', {'register_errmsg': '短信验证码填写错误'})
 
         # 3.新增用户
         user = User.objects.create_user(username=username, password=password, mobile=mobile)

@@ -4,6 +4,13 @@ from django import http
 from django_redis import get_redis_connection
 from meiduo_mall.libs.captcha.captcha import captcha
 from meiduo_mall.utils.response_code import RETCODE, err_msg
+from random import randint
+from meiduo_mall.libs.yuntongxun.sms import CCP
+
+
+import logging
+# 创建日志输出器对象
+logger = logging.getLogger('django')
 
 
 class ImageCodeView(View):
@@ -50,3 +57,19 @@ class SMSCodeView(View):
         # 判断用户填写验证码和redis取的是否一致
         if image_code_client.lower() != image_code_server.lower():
             return http.JsonResponse({'code': RETCODE.IMAGECODEERR, 'errmsg': '图形验证码填写错误'})
+
+        # 3.发短信
+        # 生成6位随机数字做为短信验证码
+        sms_code = '%06d' % randint(0, 999999)
+        logger.info(sms_code)
+
+        # 3.1发送短信
+        # CCP().send_template_sms('接收收短信手机号', ['验证码', '提示用户的过期时间:单秒分钟'], 1)
+        CCP().send_template_sms(mobile, [sms_code, 5], 1)
+        # 3.2 存储短信验证码到redis,以备注册时验证短信验证码
+        redis_conn.setex('sms_%s' % mobile, 300, sms_code)
+
+        # 4. 响应
+        return http.JsonResponse({'code': RETCODE.OK, 'errmsg': 'OK'})
+
+
