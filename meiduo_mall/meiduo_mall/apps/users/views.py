@@ -4,7 +4,7 @@ from django.views import View
 from django import http
 import re
 from .models import User
-from django.contrib.auth import login
+from django.contrib.auth import login, authenticate
 from django_redis import get_redis_connection
 
 
@@ -85,8 +85,25 @@ class LoginView(View):
     def post(self, request):
         """用户登录"""
         # 1. 接收
+        query_dict = request.POST
+        username = query_dict.get('username')
+        password = query_dict.get('password')
+        remembered = query_dict.get('remembered')
+
         # 2. 校验
+        if all([username, password]) is False:
+            return http.HttpResponseForbidden('缺少必传参数')
+
         # 3. 判断用户名及密码是否正确
+        user = authenticate(request, username=username, password=password)
+        if user is None:
+            return http.HttpResponseForbidden('用户名或密码错误')
+
         # 4. 状态保持
+        login(request, user)
+
+        if remembered is None:  # 如果用户没有勾选记住登录,设置session过期时间为会话结束
+            request.session.set_expiry(0)
+
         # 5. 重定向
-        pass
+        return http.HttpResponse('跳转到首页')
