@@ -5,8 +5,9 @@ from django_redis import get_redis_connection
 from meiduo_mall.libs.captcha.captcha import captcha
 from meiduo_mall.utils.response_code import RETCODE, err_msg
 from random import randint
-from meiduo_mall.libs.yuntongxun.sms import CCP
+# from meiduo_mall.libs.yuntongxun.sms import CCP
 from .constants import SMS_CODE_EXPIRE
+from celery_tasks.sms.tasks import send_sms_code
 
 import logging
 
@@ -81,7 +82,7 @@ class SMSCodeView(View):
 
         # 3.1发送短信
         # CCP().send_template_sms('接收收短信手机号', ['验证码', '提示用户的过期时间:单秒分钟'], 1)
-        CCP().send_template_sms(mobile, [sms_code, 5], 1)
+        send_sms_code.delay(mobile, sms_code)
         # 3.2 存储短信验证码到redis,以备注册时验证短信验证码
         # redis_conn.setex('sms_%s' % mobile, SMS_CODE_EXPIRE, sms_code)
         pl.setex('sms_%s' % mobile, SMS_CODE_EXPIRE, sms_code)
