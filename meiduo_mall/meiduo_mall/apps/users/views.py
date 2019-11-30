@@ -74,3 +74,19 @@ class MobileCountView(View):
         count = User.objects.filter(mobile=mobile).count()
         # 响应json
         return http.JsonResponse({'count': count})
+
+
+class LoginView(View):
+    """用户登录"""
+
+    def get(self, request):
+        return render(request, 'login.html')
+
+    def post(self, request):
+        """用户登录"""
+        # 1. 接收
+        # 2. 校验
+        # 3. 判断用户名及密码是否正确
+        # 4. 状态保持
+        # 5. 重定向
+        pass
