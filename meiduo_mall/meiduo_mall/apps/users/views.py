@@ -6,6 +6,7 @@ import re
 from .models import User
 from django.contrib.auth import login
 
+
 class RegisterView(View):
     """注册"""
     def get(self, request):
@@ -43,3 +44,12 @@ class RegisterView(View):
         # 4.响应
         return http.HttpResponse('注册成功即代表登录成功,重定向到首页')
 
+
+class UsernameCountView(View):
+    """判断用户名是否重复注册"""
+    def get(self, request, username):
+
+        # 校验
+        count = User.objects.filter(username=username).count()
+        # 响应json
+        return http.JsonResponse({'count': count})
