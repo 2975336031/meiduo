@@ -95,6 +95,7 @@ class LoginView(View):
             return http.HttpResponseForbidden('缺少必传参数')
 
         # 3. 判断用户名及密码是否正确
+        # 用户认证,通过认证返回user 反之返回None
         user = authenticate(request, username=username, password=password)
         if user is None:
             return http.HttpResponseForbidden('用户名或密码错误')
