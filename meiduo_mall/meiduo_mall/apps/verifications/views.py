@@ -57,8 +57,13 @@ class SMSCodeView(View):
 
         # 2.2 获取redis中图形验证码字符
         image_code_server_bytes = redis_conn.get(uuid)
+
+        # 创建redis管道
+        pl = redis_conn.pipeline()
+
         # 2.2.1 将redis中的图形验证码删除,让它是一次性（用完就删）
-        redis_conn.delete(uuid)
+        # redis_conn.delete(uuid)
+        pl.delete(uuid)
         # 2.3 判断redis中的图形验证码是否已过期
         if image_code_server_bytes is None:
             return http.JsonResponse({'code': RETCODE.IMAGECODEERR, 'errmsg': '图形验证码已过期'})
@@ -78,9 +83,14 @@ class SMSCodeView(View):
         # CCP().send_template_sms('接收收短信手机号', ['验证码', '提示用户的过期时间:单秒分钟'], 1)
         CCP().send_template_sms(mobile, [sms_code, 5], 1)
         # 3.2 存储短信验证码到redis,以备注册时验证短信验证码
-        redis_conn.setex('sms_%s' % mobile, SMS_CODE_EXPIRE, sms_code)
+        # redis_conn.setex('sms_%s' % mobile, SMS_CODE_EXPIRE, sms_code)
+        pl.setex('sms_%s' % mobile, SMS_CODE_EXPIRE, sms_code)
         # 3.3 向redis存储一个此手机号60s内发过短信标识
-        redis_conn.setex('send_flag_%s' % mobile, 60, 1)
+        # redis_conn.setex('send_flag_%s' % mobile, 60, 1)
+        pl.setex('send_flag_%s' % mobile, 60, 1)
+
+        # 执行管道
+        pl.execute()
 
         # 4. 响应
         return http.JsonResponse({'code': RETCODE.OK, 'errmsg': 'OK'})
