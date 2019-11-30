@@ -6,9 +6,10 @@ from meiduo_mall.libs.captcha.captcha import captcha
 from meiduo_mall.utils.response_code import RETCODE, err_msg
 from random import randint
 from meiduo_mall.libs.yuntongxun.sms import CCP
-
+from .constants import SMS_CODE_EXPIRE
 
 import logging
+
 # 创建日志输出器对象
 logger = logging.getLogger('django')
 
@@ -34,20 +35,30 @@ class ImageCodeView(View):
 class SMSCodeView(View):
     """短信验证码"""
     def get(self, request, mobile):
+        # 2.1 创建redis连接对象
+        redis_conn = get_redis_connection('verify_codes')
+        # 先尝试获取redis中此手机号60s内是否发送短信标识
+        send_flag = redis_conn.get('send_flag_%s' % mobile)
+        # 判断是否有标识,如果有提前响应
+        if send_flag:
+            return http.JsonResponse({'code': RETCODE.THROTTLINGERR, 'errmsg': '频繁发送短信'})
 
         # 1. 接收
         query_dict = request.GET
         image_code_client = query_dict.get('image_code')
         uuid = query_dict.get('uuid')
-
+        # 判断是否有标识,如果有提前响应
+        if send_flag:
+            return http.JsonResponse({'code': RETCODE.THROTTLINGERR, 'errmsg': '频繁发送短信'})
         # 2. 校验
         if all([image_code_client, uuid]) is False:
             return http.HttpResponseForbidden('缺少必传参数')
 
-        # 2.1 创建redis连接对象
-        redis_conn = get_redis_connection('verify_codes')
+
         # 2.2 获取redis中图形验证码字符
         image_code_server_bytes = redis_conn.get(uuid)
+        # 2.2.1 将redis中的图形验证码删除,让它是一次性（用完就删）
+        redis_conn.delete(uuid)
         # 2.3 判断redis中的图形验证码是否已过期
         if image_code_server_bytes is None:
             return http.JsonResponse({'code': RETCODE.IMAGECODEERR, 'errmsg': '图形验证码已过期'})
@@ -67,7 +78,9 @@ class SMSCodeView(View):
         # CCP().send_template_sms('接收收短信手机号', ['验证码', '提示用户的过期时间:单秒分钟'], 1)
         CCP().send_template_sms(mobile, [sms_code, 5], 1)
         # 3.2 存储短信验证码到redis,以备注册时验证短信验证码
-        redis_conn.setex('sms_%s' % mobile, 300, sms_code)
+        redis_conn.setex('sms_%s' % mobile, SMS_CODE_EXPIRE, sms_code)
+        # 3.3 向redis存储一个此手机号60s内发过短信标识
+        redis_conn.setex('send_flag_%s' % mobile, 60, 1)
 
         # 4. 响应
         return http.JsonResponse({'code': RETCODE.OK, 'errmsg': 'OK'})
