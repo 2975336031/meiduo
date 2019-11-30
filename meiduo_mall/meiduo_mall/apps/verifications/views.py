@@ -3,6 +3,7 @@ from django.views import View
 from django import http
 from django_redis import get_redis_connection
 from meiduo_mall.libs.captcha.captcha import captcha
+from meiduo_mall.utils.response_code import RETCODE, err_msg
 
 
 class ImageCodeView(View):
@@ -22,3 +23,30 @@ class ImageCodeView(View):
         # 4. 响应图片数据
         return http.HttpResponse(image, content_type='image/png')
 
+
+class SMSCodeView(View):
+    """短信验证码"""
+    def get(self, request, mobile):
+
+        # 1. 接收
+        query_dict = request.GET
+        image_code_client = query_dict.get('image_code')
+        uuid = query_dict.get('uuid')
+
+        # 2. 校验
+        if all([image_code_client, uuid]) is False:
+            return http.HttpResponseForbidden('缺少必传参数')
+
+        # 2.1 创建redis连接对象
+        redis_conn = get_redis_connection('verify_codes')
+        # 2.2 获取redis中图形验证码字符
+        image_code_server_bytes = redis_conn.get(uuid)
+        # 2.3 判断redis中的图形验证码是否已过期
+        if image_code_server_bytes is None:
+            return http.JsonResponse({'code': RETCODE.IMAGECODEERR, 'errmsg': '图形验证码已过期'})
+
+        # 将bytes类型转换成str (从redis中获取出来的数据都是bytes  str, dict, list, set)
+        image_code_server = image_code_server_bytes.decode()
+        # 判断用户填写验证码和redis取的是否一致
+        if image_code_client.lower() != image_code_server.lower():
+            return http.JsonResponse({'code': RETCODE.IMAGECODEERR, 'errmsg': '图形验证码填写错误'})
