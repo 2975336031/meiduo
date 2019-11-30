@@ -20,4 +20,7 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
 
     url(r'^', include('users.urls')),
+
+    url(r'^', include('verifications.urls', namespace='verifications')),  # 验证码模块
+
 ]
