@@ -26,7 +26,8 @@ SECRET_KEY = 'ps4==(m3=5@hnx7k3&iqqz#=ls!#wzk!rda47648$t$$((43fz'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# 允许哪些域名访问Django服务器
+ALLOWED_HOSTS = ['www.meiduo.site', '127.0.0.1']
 
 
 # Application definition
@@ -38,7 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'users',  # 用户模块应用
+    'users.apps.UsersConfig',  # 用户模块应用
+    'oauth.apps.OauthConfig',
 ]
 
 MIDDLEWARE = [
