@@ -12,8 +12,7 @@ from django.contrib.auth import login, authenticate, logout
 from django_redis import get_redis_connection
 from django.conf import settings
 from meiduo_mall.utils.views import LoginRequiredView
-
-from django.core.mail import send_mail
+from celery_tasks.email.tasks import send_verify_url
 
 
 class RegisterView(View):
@@ -169,8 +168,10 @@ class EmailView(LoginRequiredView):
 
         # 给用户的邮箱发送激活邮件
         # send_mail(subject='主题/标题', message='普通邮件内容', from_email='发件人邮箱', recipient_list=['收件人邮箱列表'], html_message='超文本邮箱内容')
-        send_mail('hello', '', '美多商城<itcast99@163.com>', [email],
-                  html_message='<a href="http://www.baidu.com">百度一下</a>')
+        # send_mail('hello', '', '美多商城<itcast99@163.com>', [email],
+        #           html_message='<a href="http://www.baidu.com">百度一下</a>')
+        verify_url = 'http://www.baidu.com'
+        send_verify_url.delay(email, verify_url)
 
         # 4. 响应
         return http.JsonResponse({'code': RETCODE.OK, 'errmsg': 'OK'})
