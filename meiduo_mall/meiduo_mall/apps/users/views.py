@@ -13,6 +13,7 @@ from django_redis import get_redis_connection
 from django.conf import settings
 from meiduo_mall.utils.views import LoginRequiredView
 from celery_tasks.email.tasks import send_verify_url
+from .utils import generate_email_verify_url, get_user_token
 
 
 class RegisterView(View):
@@ -170,8 +171,26 @@ class EmailView(LoginRequiredView):
         # send_mail(subject='主题/标题', message='普通邮件内容', from_email='发件人邮箱', recipient_list=['收件人邮箱列表'], html_message='超文本邮箱内容')
         # send_mail('hello', '', '美多商城<itcast99@163.com>', [email],
         #           html_message='<a href="http://www.baidu.com">百度一下</a>')
-        verify_url = 'http://www.baidu.com'
+        verify_url = generate_email_verify_url(user)
         send_verify_url.delay(email, verify_url)
 
         # 4. 响应
         return http.JsonResponse({'code': RETCODE.OK, 'errmsg': 'OK'})
+
+
+class EmailVerifyView(View):
+    """激活邮箱"""
+    def get(self, request):
+        # 1.接收查询参数token
+        token = request.GET.get('token')
+        # 2. 对token进行解密
+        user = get_user_token(token)
+        # 判断是否拿到user,如果有
+        if user is None:
+            return http.HttpResponseForbidden('邮箱激活失败')
+        # 将user的email_active改国True 再save
+        user.email_active = True
+        user.save()
+        # 响应
+        # return render(request, 'user_center_info.html')
+        return redirect('/info/')
