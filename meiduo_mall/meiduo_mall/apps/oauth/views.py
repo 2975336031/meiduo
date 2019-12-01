@@ -3,10 +3,13 @@ from QQLoginTool.QQtool import OAuthQQ
 from django import http
 from django.shortcuts import render, redirect
 from django.contrib.auth import login
+import re
+from django_redis import get_redis_connection
 
 from meiduo_mall.utils.response_code import RETCODE
 from django.conf import settings
 from .models import OAuthQQUser
+from users.models import User
 
 
 class QQAuthURLView(View):
@@ -63,4 +66,55 @@ class QQAuthView(View):
             return response
         except OAuthQQUser.DoesNotExist:
             # 如果openid没有查询到(openid还没有绑定用户, 没有绑定,渲染一个绑定用户界面)
-            pass
+            context = {'openid': openid}
+            return render(request, 'oauth_callback.html', context)
+
+    def post(self, request):
+        """openid绑定用户"""
+        # 1. 接收表单中的数据
+        query_dict = request.POST
+        # dict1 = query_dict.dict()
+        # dict1.values()
+        mobile = query_dict.get('mobile')
+        password = query_dict.get('password')
+        sms_code = query_dict.get('sms_code')
+        openid = query_dict.get('openid')
+        # 2. 校验
+        if all([mobile, password, sms_code, openid]) is False:
+            return http.HttpResponseForbidden('缺少必传参数')
+        if not re.match(r'^1[3-9]\d{9}$', mobile):
+            return http.HttpResponseForbidden('手机号格式有误')
+        if not re.match(r'^[0-9A-Za-z]{8,20}$', password):
+            return http.HttpResponseForbidden('请输入8-20个字符的密码')
+
+        # 校验短信验证码
+        redis_conn = get_redis_connection('verify_codes')
+        sms_code_server = redis_conn.get('sms_%s' % mobile)
+        redis_conn.delete('sms_%s' % mobile)
+        if sms_code_server is None:
+            return http.HttpResponseForbidden('短信验证码已过期')
+        if sms_code != sms_code_server.decode():
+            return http.HttpResponseForbidden('短信验证码填写错误')
+        try:
+            # 3. 查询手机号是否已注册过
+            user = User.objects.get(mobile=mobile)
+            # 4. 注册过再校验传入的密码是否正确
+            if user.check_password(password) is False:
+                return http.HttpResponseForbidden('绑定失败')
+        except User.DoesNotExist:
+            # 5. 如果手机号是新的,就创建一个新用户
+            user = User.objects.create_user(username=mobile, password=password, mobile=mobile)
+
+        # 6.openid绑定美多新老用户
+        OAuthQQUser.objects.create(
+            openid=openid,
+            user=user,
+        )
+        # 7. 状态保持
+        login(request, user)
+
+        # 8. 存储cookie中的username
+        response = redirect(request.GET.get('state') or '/')
+        response.set_cookie('username', user.username, max_age=settings.SESSION_COOKIE_AGE)
+        # 9. 重定向到来源
+        return response
