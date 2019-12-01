@@ -194,3 +194,9 @@ class EmailVerifyView(View):
         # 响应
         # return render(request, 'user_center_info.html')
         return redirect('/info/')
+
+
+class AddressView(LoginRequiredView):
+    """用户收货地址"""
+    def get(self, request):
+        return render(request, 'user_center_site.html')
