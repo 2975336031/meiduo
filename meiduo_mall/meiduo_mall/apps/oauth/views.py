@@ -10,6 +10,7 @@ from meiduo_mall.utils.response_code import RETCODE
 from django.conf import settings
 from .models import OAuthQQUser
 from users.models import User
+from .utils import generate_open_id_signature, check_open_id
 
 
 class QQAuthURLView(View):
@@ -66,6 +67,8 @@ class QQAuthView(View):
             return response
         except OAuthQQUser.DoesNotExist:
             # 如果openid没有查询到(openid还没有绑定用户, 没有绑定,渲染一个绑定用户界面)
+            # 对原始的openid 进行加密,把加密后的openid再渲染到表单
+            openid = generate_open_id_signature(openid)
             context = {'openid': openid}
             return render(request, 'oauth_callback.html', context)
 
@@ -105,6 +108,10 @@ class QQAuthView(View):
             # 5. 如果手机号是新的,就创建一个新用户
             user = User.objects.create_user(username=mobile, password=password, mobile=mobile)
 
+        # 对openid进行解密, 绑定原始openid
+        openid = check_open_id(openid)
+        if openid is None:
+            return http.HttpResponseForbidden('openid无效')
         # 6.openid绑定美多新老用户
         OAuthQQUser.objects.create(
             openid=openid,
