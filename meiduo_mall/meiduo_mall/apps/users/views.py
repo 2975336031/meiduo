@@ -4,10 +4,12 @@ from django.shortcuts import render, redirect
 from django.views import View
 from django import http
 import re
+import json
 from .models import User
 from django.contrib.auth import login, authenticate, logout
 from django_redis import get_redis_connection
 from django.conf import settings
+from meiduo_mall.utils.views import LoginRequiredView
 
 
 class RegisterView(View):
@@ -139,3 +141,29 @@ class InfoView(LoginRequiredMixin, View):
         # else:
         #     return redirect('/login/?next=/info/')
         return render(request, 'user_center_info.html')
+
+
+class EmailView(LoginRequiredView):
+    """设置邮箱"""
+
+    def put(self, request):
+        # 1. 接收
+        json_str_bytes = request.body
+        json_str = json_str_bytes.decode()
+        json_dict = json.loads(json_str)
+        email = json_dict.get('email')
+
+        # 2. 校验
+        if not re.match(r'^[a-z0-9][\w\.\-]*@[a-z0-9\-]+(\.[a-z]{2,5}){1,2}$', email):
+            return http.HttpResponseForbidden('邮箱格式有误')
+
+        # 3. 修改user的email字段, save
+        user = request.user
+        if user.email == '':  # 只有当用户真的没有邮箱时再去设置
+            user.email = email
+            user.save()
+
+        # 给用户的邮箱发送激活邮件
+
+        # 4. 响应
+        return http.JsonResponse({'code': RETCODE.OK, 'errmsg': 'OK'})
