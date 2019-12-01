@@ -1,9 +1,12 @@
 from django.views import View
 from QQLoginTool.QQtool import OAuthQQ
 from django import http
+from django.shortcuts import render, redirect
+from django.contrib.auth import login
 
 from meiduo_mall.utils.response_code import RETCODE
 from django.conf import settings
+from .models import OAuthQQUser
 
 
 class QQAuthURLView(View):
@@ -44,5 +47,20 @@ class QQAuthView(View):
         access_token = auth_tool.get_access_token(code)
         #  调用get_openid
         openid = auth_tool.get_open_id(access_token)
-        # 查询openid是否和美多中的user有关联
-        pass
+        # 查询openid是否和美多中的user有关
+
+        try:
+            # 查询openid是否和美多中的user有关联
+            oauth_model = OAuthQQUser.objects.get(openid=openid)
+            # 如果openid查询到了(openid已绑定用户, 代表登录成功)
+            user = oauth_model.user
+            # 状态保持
+            login(request, user)
+            # 向cookie中存储username
+            response = redirect(request.GET.get('state') or '/')
+            response.set_cookie('username', user.username, max_age=settings.SESSION_COOKIE_AGE)
+            # 重定向到来源
+            return response
+        except OAuthQQUser.DoesNotExist:
+            # 如果openid没有查询到(openid还没有绑定用户, 没有绑定,渲染一个绑定用户界面)
+            pass
