@@ -26,4 +26,6 @@ urlpatterns = [
     url(r'^', include('contents.urls', namespace='contents')),  # 首页模块
 
     url(r'^', include('oauth.urls', namespace='oauth')),  # QQ模块
+
+    url(r'^', include('areas.urls', namespace='areas')),  # 市区模块
 ]
